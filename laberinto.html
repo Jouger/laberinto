@@ -25,7 +25,53 @@
     <canvas id="canvas"></canvas>
 
     <script>
-    const canvas = document.getElementById("canvas");
+    class Node {
+      constructor(value) {
+        this.value = value;
+        this.next = null;
+      }
+    }
+    
+    class Queue {
+      constructor() {
+        this.head = null;
+        this.tail = null;
+        this.length = 0;
+      }
+    
+      enqueue(value) {
+        const newNode = new Node(value);
+        if (!this.tail) {
+          this.head = this.tail = newNode;
+        } else {
+          this.tail.next = newNode; // "puntero" al siguiente nodo
+          this.tail = newNode;
+        }
+        this.length++;
+      }
+    
+      dequeue() {
+        if (!this.head) return undefined;
+        const value = this.head.value;
+        this.head = this.head.next;
+        if (!this.head) this.tail = null;
+        this.length--;
+        return value;
+      }
+    
+      peek() {
+        return this.head?.value;
+      }
+    
+      isEmpty() {
+        return this.length === 0;
+      }
+    
+      size() {
+        return this.length;
+      }
+    }
+        const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     canvas.width = 400
     canvas.height = 400
@@ -79,11 +125,34 @@
     }
 
     function test(){
-        for(let i=0; i<400; i++){
-            let [x,y] = getRandomPerimeterPoint()
-            grid[x][y] = 1
+        const q = new Queue()
+        let p = getRandomPoint()
+        q.enqueue(p)
+    	const seen = {}
+    	seen[p] = true
+    	let r = Math.floor(Math.random()*13)
+    	if(r%2 == 0) r++
+        for(let n=0; n<r*r; n++){
+              let [x,y] = q.dequeue()
+	      grid[x][y] = 1
+	      for(let i=-1; i<2; i++){
+		for(let j=-1; j<2; j++){
+		  if(!seen[[x+i,y+j]]){
+		    q.enqueue([x+i,y+j])
+		    seen[[x+i,y+j]] = true
+		  }
+		}
+	      }
+            
         }
     }
+
+    setInterval(() => {
+      test();
+      draw()
+    }, 100)
+    
+    
     test()
     draw()
 
