@@ -71,12 +71,15 @@
         return this.length;
       }
     }
-        const canvas = document.getElementById("canvas");
+    
+    const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     canvas.width = 400
     canvas.height = 400
-
     const [rows, columns] = [100, 100]
+    const cellWidth = canvas.width/columns
+    const cellHeight = canvas.height/rows
+
     let grid = [];
 
     for (let i = 0; i < rows; i++) {
@@ -87,19 +90,18 @@
     }
 
     function draw(){
-        let cellWidth = canvas.width/columns
-        let cellHeight = canvas.height/rows
 
-        for(let i=0; i<columns; i++){
-            for(let j=0; j<rows; j++){
+        for(let i=0; i<rows; i++){
+            for(let j=0; j<columns; j++){
                 if(grid[i][j]){
-                    ctx.fillStyle = "black";
+                    ctx.fillStyle = grid[i][j];
                 }else{
                     ctx.fillStyle = "white";
                 }
                 ctx.fillRect(j*cellWidth, i*cellHeight, cellWidth, cellHeight);
             }
         }
+        requestAnimationFrame(draw)
     }
 
     function getRandomPerimeterPoint() {
@@ -119,42 +121,76 @@
     }
 
     function getRandomPoint(){
-        let x = Math.floor(Math.random()*columns)
-        let y = Math.floor(Math.random()*rows)
-        return [x,y]
+        let i = Math.floor(Math.random()*columns)
+        let j = Math.floor(Math.random()*rows)
+        return [i,j]
     }
 
-    function test(){
+    function getRandomColor() {
+    	var letters = '0123456789ABCDEF';
+    	var color = '#';
+    	for (var i = 0; i < 6; i++) {
+    	    color += letters[Math.floor(Math.random() * 16)];
+    	}
+    	return color;
+    }
+    
+    function getKey(i, j) {
+	return `${i},${j}`;
+    }
+    
+    const visited = {}
+    
+    function test(p = getRandomPoint(), color){
         const q = new Queue()
-        let p = getRandomPoint()
         q.enqueue(p)
-    	const seen = {}
-    	seen[p] = true
-    	let r = Math.floor(Math.random()*13)
-    	if(r%2 == 0) r++
-        for(let n=0; n<r*r; n++){
-              let [x,y] = q.dequeue()
-	      grid[x][y] = 1
-	      for(let i=-1; i<2; i++){
-		for(let j=-1; j<2; j++){
-		  if(!seen[[x+i,y+j]]){
-		    q.enqueue([x+i,y+j])
-		    seen[[x+i,y+j]] = true
-		  }
-		}
-	      }
-            
-        }
-    }
+        function isValid(i, j) {
+	  return !visited[getKey(i,j)] && i >= 0 && i < rows && j >= 0 && j < columns && (grid[i][j] == 0);
+	}
 
-    setInterval(() => {
-      test();
-      draw()
-    }, 100)
-    
-    
-    test()
-    draw()
+	function addPointBatch(batchSize = 30) {
+    	  let count = 0;
+    	  while (!q.isEmpty() && count < batchSize) {
+              let [i,j] = q.dequeue()
+              if(visited[getKey(i,j)]) continue
+	      visited[getKey(i,j)] = true
+	      grid[i][j] = color
+	      let a = Math.sign(i - p[0])
+	      let b = Math.sign(j - p[1])
+	        if (a === 0 && b === 0) {
+		  if (isValid(i, j - 1)) q.enqueue([i, j - 1]);
+		  if (isValid(i - 1, j)) q.enqueue([i - 1, j]);
+		  if (isValid(i, j + 1)) q.enqueue([i, j + 1]);
+		  if (isValid(i + 1, j)) q.enqueue([i + 1, j]);
+		} else if (a === 0) {
+		  if (isValid(i, j + b)) q.enqueue([i, j + b]);
+		  if (isValid(i + b, j)) q.enqueue([i + b, j]);
+		} else if (b === 0) {
+		  if (isValid(i + a, j)) q.enqueue([i + a, j]);
+		  if (isValid(i, j - a)) q.enqueue([i, j - a]);
+		} else if (a === b) {
+		  if (isValid(i + a, j)) q.enqueue([i + a, j]);
+		} else if (a !== b) {
+		  if (isValid(i, j + b)) q.enqueue([i, j + b]);
+		}
+		count++;
+          }
+          if (!q.isEmpty()) {
+	      requestAnimationFrame(() => addPointBatch());
+	  }
+	}
+        addPointBatch()
+    }
+    for(let i=0; i<10; i++){
+    	test(getRandomPoint(), getRandomColor())
+    }
+    canvas.addEventListener("click", (e) => {
+    	const rect = canvas.getBoundingClientRect(); // posición y tamaño del canvas
+  	const i = Math.floor((event.clientY - rect.top)*rows/canvas.height)
+  	const j = Math.floor((event.clientX - rect.left)*columns/canvas.width);
+    	test([i,j], getRandomColor())
+    })
+    requestAnimationFrame(draw)
 
 
 
