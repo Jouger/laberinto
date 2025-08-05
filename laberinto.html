@@ -76,7 +76,7 @@
     const ctx = canvas.getContext("2d");
     canvas.width = 400
     canvas.height = 400
-    const [rows, columns] = [100, 100]
+    const [rows, columns] = [40, 40]
     const cellWidth = canvas.width/columns
     const cellHeight = canvas.height/rows
 
@@ -181,7 +181,17 @@
     function labyrinthAlg(startingPoint){
       const visited = {}
       const seen = {}
-      const q = new Queue()
+      //const q = new Queue()
+      const q = []
+      q.enqueue = function([i,j]){
+        this.push([i,j])
+      }
+      q.dequeue = function(){
+        return this.pop()
+      }
+      q.isEmpty = function(){
+        return this.length == 0
+      }
       
       function isValid(i, j) {
 	      return !visited[getKey(i,j)] && i >= 0 && i < rows && j >= 0 && j < columns && (grid[i][j] == "#777777");
@@ -206,12 +216,12 @@
       
       function start(){
         let count = 0
-        while (!q.isEmpty() && count < 10) {
+        while (!q.isEmpty() && count < 1) {
           let [i,j] = q.dequeue()
           if(visited[getKey(i,j)]) continue
           visited[getKey(i,j)] = true
           const r = Math.random()
-          if(r<0.8 && !q.isEmpty()){
+          if(r<0.35 && !q.isEmpty()){
             grid[i][j] = '#000000'
           }else{
             paintWhite(i,j)
