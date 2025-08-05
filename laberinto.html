@@ -85,7 +85,7 @@
     for (let i = 0; i < rows; i++) {
         grid[i] = [];
         for (let j = 0; j < columns; j++) {
-            grid[i][j] = 0;
+            grid[i][j] = "#777777";
         }
     }
 
@@ -93,11 +93,7 @@
 
         for(let i=0; i<rows; i++){
             for(let j=0; j<columns; j++){
-                if(grid[i][j]){
-                    ctx.fillStyle = grid[i][j];
-                }else{
-                    ctx.fillStyle = "white";
-                }
+                ctx.fillStyle = grid[i][j];
                 ctx.fillRect(j*cellWidth, i*cellHeight, cellWidth, cellHeight);
             }
         }
@@ -136,63 +132,115 @@
     }
     
     function getKey(i, j) {
-	return `${i},${j}`;
+	    return `${i},${j}`;
     }
     
-    const visited = {}
+    const visitedGlobal = {}
     
     function test(p = getRandomPoint(), color){
-        const q = new Queue()
-        q.enqueue(p)
-        function isValid(i, j) {
-	  return !visited[getKey(i,j)] && i >= 0 && i < rows && j >= 0 && j < columns && (grid[i][j] == 0);
-	}
+      const q = new Queue()
+      q.enqueue(p)
+      function isValid(i, j) {
+	      return !visitedGlobal[getKey(i,j)] && i >= 0 && i < rows && j >= 0 && j < columns && (grid[i][j] == "#000000");
+	    }
 
-	function addPointBatch(batchSize = 30) {
+	    function addPointBatch(batchSize = 1) {
     	  let count = 0;
     	  while (!q.isEmpty() && count < batchSize) {
-              let [i,j] = q.dequeue()
-              if(visited[getKey(i,j)]) continue
-	      visited[getKey(i,j)] = true
-	      grid[i][j] = color
-	      let a = Math.sign(i - p[0])
-	      let b = Math.sign(j - p[1])
-	        if (a === 0 && b === 0) {
-		  if (isValid(i, j - 1)) q.enqueue([i, j - 1]);
-		  if (isValid(i - 1, j)) q.enqueue([i - 1, j]);
-		  if (isValid(i, j + 1)) q.enqueue([i, j + 1]);
-		  if (isValid(i + 1, j)) q.enqueue([i + 1, j]);
-		} else if (a === 0) {
-		  if (isValid(i, j + b)) q.enqueue([i, j + b]);
-		  if (isValid(i + b, j)) q.enqueue([i + b, j]);
-		} else if (b === 0) {
-		  if (isValid(i + a, j)) q.enqueue([i + a, j]);
-		  if (isValid(i, j - a)) q.enqueue([i, j - a]);
-		} else if (a === b) {
-		  if (isValid(i + a, j)) q.enqueue([i + a, j]);
-		} else if (a !== b) {
-		  if (isValid(i, j + b)) q.enqueue([i, j + b]);
-		}
-		count++;
-          }
-          if (!q.isEmpty()) {
-	      requestAnimationFrame(() => addPointBatch());
-	  }
-	}
-        addPointBatch()
+          let [i,j] = q.dequeue()
+          if(visitedGlobal[getKey(i,j)]) continue
+          visitedGlobal[getKey(i,j)] = true
+          grid[i][j] = color
+          let a = Math.sign(i - p[0])
+          let b = Math.sign(j - p[1])
+          if (a === 0 && b === 0) {
+      		  if (isValid(i, j - 1)) q.enqueue([i, j - 1]);
+      		  if (isValid(i - 1, j)) q.enqueue([i - 1, j]);
+      		  if (isValid(i, j + 1)) q.enqueue([i, j + 1]);
+      		  if (isValid(i + 1, j)) q.enqueue([i + 1, j]);
+	        }else if (a === 0) {
+      		  if (isValid(i, j + b)) q.enqueue([i, j + b]);
+      		  if (isValid(i + b, j)) q.enqueue([i + b, j]);
+      		}else if (b === 0) {
+      		  if (isValid(i + a, j)) q.enqueue([i + a, j]);
+      		  if (isValid(i, j - a)) q.enqueue([i, j - a]);
+      		}else if (a === b) {
+      		  if (isValid(i + a, j)) q.enqueue([i + a, j]);
+      		} else if (a !== b) {
+      		  if (isValid(i, j + b)) q.enqueue([i, j + b]);
+	        }
+		      count++;
+        }
+        if (!q.isEmpty()) {
+	        requestAnimationFrame(() => addPointBatch());
+	      }
+	    }
+      addPointBatch()
     }
-    for(let i=0; i<10; i++){
+    
+    function labyrinthAlg(startingPoint){
+      const visited = {}
+      const seen = {}
+      const q = new Queue()
+      
+      function isValid(i, j) {
+	      return !visited[getKey(i,j)] && i >= 0 && i < rows && j >= 0 && j < columns && (grid[i][j] == "#777777");
+	    }
+	    
+	    function check(i, j){
+	      if(!seen[getKey(i,j)]){
+	        q.enqueue([i,j])
+	        seen[getKey(i,j)] = true
+	      }
+	    }
+	    function paintWhite(i, j){
+	      grid[i][j] = '#FFFFFF'
+        if (isValid(i, j - 1)) check(i, j - 1);
+  		  if (isValid(i - 1, j)) check(i - 1, j);
+  		  if (isValid(i, j + 1)) check(i, j + 1);
+  		  if (isValid(i + 1, j)) check(i + 1, j);
+	    }
+	    
+      paintWhite(startingPoint[0],startingPoint[1])
+      grid[startingPoint[0]][startingPoint[1]] = '#FF0000'
+      
+      function start(){
+        let count = 0
+        while (!q.isEmpty() && count < 10) {
+          let [i,j] = q.dequeue()
+          if(visited[getKey(i,j)]) continue
+          visited[getKey(i,j)] = true
+          const r = Math.random()
+          if(r<0.8 && !q.isEmpty()){
+            grid[i][j] = '#000000'
+          }else{
+            paintWhite(i,j)
+          }
+          count++
+          if (q.isEmpty()){
+            grid[i][j] = '#FF0000'
+          }
+        }
+        if (!q.isEmpty()) {
+  	      requestAnimationFrame(() => start());
+  	    }
+      } 
+      start()
+    }
+    
+    for(let i=0; i<0; i++){
     	test(getRandomPoint(), getRandomColor())
     }
+    
     canvas.addEventListener("click", (e) => {
     	const rect = canvas.getBoundingClientRect(); // posición y tamaño del canvas
-  	const i = Math.floor((event.clientY - rect.top)*rows/canvas.height)
-  	const j = Math.floor((event.clientX - rect.left)*columns/canvas.width);
+  	  const i = Math.floor((event.clientY - rect.top)*rows/canvas.height)
+  	  const j = Math.floor((event.clientX - rect.left)*columns/canvas.width);
     	test([i,j], getRandomColor())
     })
     requestAnimationFrame(draw)
 
-
+    labyrinthAlg(getRandomPoint())
 
     </script>
 </body>
