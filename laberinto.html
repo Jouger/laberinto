@@ -74,9 +74,10 @@
     
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    canvas.width = 400
-    canvas.height = 400
-    const [rows, columns] = [40, 40]
+    const [rows, columns] = [21, 21]
+    const resolution = 20
+    canvas.width = columns * resolution
+    canvas.height = rows * resolution
     const cellWidth = canvas.width/columns
     const cellHeight = canvas.height/rows
 
@@ -85,7 +86,8 @@
     for (let i = 0; i < rows; i++) {
         grid[i] = [];
         for (let j = 0; j < columns; j++) {
-            grid[i][j] = "#777777";
+          if(i % 2 == 1 && j % 2 == 1) grid[i][j] = "#FFFFFF"
+          else grid[i][j] = "#000000"
         }
     }
 
@@ -121,6 +123,14 @@
         let j = Math.floor(Math.random()*rows)
         return [i,j]
     }
+    
+    function getRandomStartingPoint(){
+      let i = Math.floor(Math.random()*(columns-1)/2)*2 + 1
+      let j = Math.floor(Math.random()*(rows-1)/2)*2 + 1
+      return [i,j]
+    }
+
+    
 
     function getRandomColor() {
     	var letters = '0123456789ABCDEF';
@@ -180,67 +190,77 @@
     
     function labyrinthAlg(startingPoint){
       const visited = {}
-      const seen = {}
-      //const q = new Queue()
-      const q = []
-      q.enqueue = function([i,j]){
-        this.push([i,j])
-      }
-      q.dequeue = function(){
-        return this.pop()
-      }
-      q.isEmpty = function(){
-        return this.length == 0
+      
+	    function getRandomNeighbour(p){
+        function isValid(i,j){
+          return !visited[getKey(i,j)] && (i >= 1) && (i < rows - 1) && (j >= 1) && (j < columns - 1)
+        }
+        const neighbours = []
+        
+        const i = p[0]
+        const j = p[1]
+        
+        if (isValid(i, j - 2)) neighbours.push([i, j - 2])
+        if (isValid(i - 2, j)) neighbours.push([i - 2, j])
+        if (isValid(i, j + 2)) neighbours.push([i, j + 2])
+        if (isValid(i + 2, j)) neighbours.push([i + 2, j])
+        
+        return neighbours.length > 0 ? neighbours[Math.floor(Math.random()*neighbours.length)] : [-1, -1]
+        
       }
       
-      function isValid(i, j) {
-	      return !visited[getKey(i,j)] && i >= 0 && i < rows && j >= 0 && j < columns && (grid[i][j] == "#777777");
-	    }
-	    
-	    function check(i, j){
-	      if(!seen[getKey(i,j)]){
-	        q.enqueue([i,j])
-	        seen[getKey(i,j)] = true
-	      }
-	    }
-	    function paintWhite(i, j){
-	      grid[i][j] = '#FFFFFF'
-        if (isValid(i, j - 1)) check(i, j - 1);
-  		  if (isValid(i - 1, j)) check(i - 1, j);
-  		  if (isValid(i, j + 1)) check(i, j + 1);
-  		  if (isValid(i + 1, j)) check(i + 1, j);
-	    }
-	    
-      paintWhite(startingPoint[0],startingPoint[1])
-      grid[startingPoint[0]][startingPoint[1]] = '#FF0000'
+      visited[getKey(startingPoint[0],startingPoint[1])] = true
+      const stack = []
+      stack.push([startingPoint,0])
+      grid[startingPoint[0]][startingPoint[1]] = '#00FF00'
+      
+      let iLast, jLast
+      let lock = false
+      let maxD = 0
+      let currentFurthest = startingPoint
+      let currentLast = startingPoint
       
       function start(){
         let count = 0
-        while (!q.isEmpty() && count < 1) {
-          let [i,j] = q.dequeue()
-          if(visited[getKey(i,j)]) continue
-          visited[getKey(i,j)] = true
-          const r = Math.random()
-          if(r<0.35 && !q.isEmpty()){
-            grid[i][j] = '#000000'
-          }else{
-            paintWhite(i,j)
-          }
-          count++
-          if (q.isEmpty()){
-            grid[i][j] = '#FF0000'
-          }
-        }
-        if (!q.isEmpty()) {
-  	      requestAnimationFrame(() => start());
+  	    while(stack.length != 0 && count < 1){
+  	      let [current,d] = stack.pop()
+  	      const [iNeighbourg, jNeighbourg] = getRandomNeighbour(current)
+  	      if(iNeighbourg == -1){
+  	        lock = true
+  	        continue
+  	      }
+  	      stack.push([current,d])
+  	      d++
+  	      grid[(current[0] + iNeighbourg) / 2][(current[1] + jNeighbourg) / 2] = '#FFFFFF'
+  	      visited[getKey(iNeighbourg,jNeighbourg)] = true
+  	      stack.push([[iNeighbourg,jNeighbourg], d])
+  	      grid[iNeighbourg][jNeighbourg] = '#0000FF'
+  	      if((currentLast[0] != currentFurthest[0]) && (currentLast[1] != currentFurthest[1])){
+  	        grid[currentLast[0]][currentLast[1]] = '#FFFFFF'
+  	      
+  	        console.log("aaa")
+  	      }
+  	      currentLast = [iNeighbourg, jNeighbourg]
+  	      
+  	      if(d > maxD){
+  	        console.log(d)
+  	        if(maxD > 0) grid[currentFurthest[0]][currentFurthest[1]] = '#FFFFFF'
+  	        currentFurthest = [iNeighbourg, jNeighbourg]
+  	        grid[currentFurthest[0]][currentFurthest[1]] = '#FF0000'
+  	        maxD = d
+  	      }
+  	      count ++
+  	      
   	    }
-      } 
+
+  	    if (stack.length != 0) {
+  	      setTimeout(start, 10)
+  	      //requestAnimationFrame(() => start());
+  	    }
+      }
       start()
     }
     
-    for(let i=0; i<0; i++){
-    	test(getRandomPoint(), getRandomColor())
-    }
     
     canvas.addEventListener("click", (e) => {
     	const rect = canvas.getBoundingClientRect(); // posición y tamaño del canvas
@@ -249,8 +269,10 @@
     	test([i,j], getRandomColor())
     })
     requestAnimationFrame(draw)
+    
+    const p = getRandomStartingPoint()
 
-    labyrinthAlg(getRandomPoint())
+    labyrinthAlg(p)
 
     </script>
 </body>
